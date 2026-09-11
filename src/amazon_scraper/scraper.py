@@ -38,8 +38,8 @@ class MissingProductDataError(BaseException):
 
 class ProductXPath(str, Enum):
     PRODUCTS = "//div[@data-component-type='s-search-result']"
-    TITLE = ".//h2/a/span"
-    URL = ".//h2/a"
+    TITLE = ".//a/h2/span"
+    URL = ".//a[h2]"
     PRICE_WHOLE = ".//span[@class='a-price']//span[@class='a-price-whole']"
     PRICE_FRACTIONAL = ".//span[@class='a-price']//span[@class='a-price-fraction']"
     IMAGE_URL = ".//img"
