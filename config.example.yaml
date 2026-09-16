@@ -1,0 +1,49 @@
+# Multi-store scraper configuration
+# Copy this file to config.yaml and edit as needed.
+
+stores:
+  amazon:
+    base_url: "https://www.amazon.com"
+  # Future stores (uncomment when implemented):
+  # cruz_verde:
+  #   base_url: "https://www.cruzverde.com.co"
+  # farmatodo:
+  #   base_url: "https://www.farmatodo.com"
+  # locatel:
+  #   base_url: "https://www.locatel.com.co"
+  # colsubsidio:
+  #   base_url: "https://www.colsubsidio.com"
+
+categories:
+  baby:
+    keywords:
+      - "pañal"
+      - "pañales"
+      - "fórmula"
+      - "formula"
+      - "biberón"
+      - "biberon"
+      - "toallitas"
+      - "crema bebé"
+      - "crema bebe"
+      - "shampoo bebé"
+      - "shampu bebe"
+      - "papilla"
+      - "gerber"
+      - "nan"
+      - "promod"
+      - "enfagrow"
+      - "similac"
+      - "continente"
+      - "cereal"
+      - "mamadera"
+      - "chupón"
+      - "chupon"
+      - "cobertor"
+      - "pañalera"
+      - "humidificador"
+      - "termómetro"
+      - "jarabe bebé"
+      - "vitamina bebé"
+
+output_dir: "output"
