@@ -25,6 +25,7 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 # New stores are registered here as they are implemented.
 STORE_SCRAPERS = {
     "amazon": "amazon_scraper.scrapers.amazon.AmazonScraper",
+    "cruz_verde": "amazon_scraper.scrapers.cruz_verde.CruzVerdeScraper",
 }
 
 

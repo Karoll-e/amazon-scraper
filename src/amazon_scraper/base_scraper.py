@@ -138,20 +138,61 @@ class BaseScraper(ABC):
         time.sleep(random.uniform(min_s, max_s))
 
     # ------------------------------------------------------------------
-    #  Abstract methods — must be implemented by each store scraper
+    #  Product-extraction hooks
+    #
+    #  Two ways to implement a store scraper:
+    #    1. Element-based (like Amazon): implement _get_product_elements
+    #       and _parse_product_data. The default _scrape_products handles
+    #       the loop.
+    #    2. API-based (like Cruz Verde): override _scrape_products entirely
+    #       and use the driver's session to call the store's internal API
+    #       (e.g. via JS fetch, which reuses the page's cookies).
     # ------------------------------------------------------------------
 
-    @abstractmethod
     def _get_product_elements(
         self, driver: webdriver.Chrome
     ) -> List[WebElement]:
-        """Return the list of product WebElements from the currently loaded page."""
-        ...
+        """Return product WebElements from the loaded page (element-based)."""
+        raise NotImplementedError(
+            f"{type(self).__name__} does not implement element-based extraction."
+        )
 
-    @abstractmethod
     def _parse_product_data(self, element: WebElement) -> Product:
-        """Parse a single product WebElement into a Product model instance."""
-        ...
+        """Parse a single product WebElement into a Product (element-based)."""
+        raise NotImplementedError(
+            f"{type(self).__name__} does not implement element-based extraction."
+        )
+
+    def _scrape_products(
+        self, driver: webdriver.Chrome, url: str
+    ) -> List[Product]:
+        """
+        Default extraction loop for element-based scrapers.
+        API-based scrapers override this method.
+        """
+        product_elements = self._get_product_elements(driver)
+        self._logger.info(
+            f"Found {len(product_elements)} product elements on {self.store_name}."
+        )
+
+        parsed_products: List[Product] = []
+        for element in product_elements:
+            try:
+                parsed_product = self._parse_product_data(element)
+            except MissingProductDataError:
+                self._logger.error(
+                    "Couldn't get all required data for product. Skipping.."
+                )
+                continue
+            except Exception:
+                self._logger.error(
+                    "Unexpected error when parsing data for product. Skipping.."
+                )
+                continue
+            else:
+                parsed_products.append(parsed_product)
+
+        return parsed_products
 
     # ------------------------------------------------------------------
     #  Main orchestration
@@ -184,27 +225,7 @@ class BaseScraper(ABC):
 
         try:
             self._navigate_and_wait(driver, url)
-            product_elements = self._get_product_elements(driver)
-            self._logger.info(
-                f"Found {len(product_elements)} product elements on {self.store_name}."
-            )
-
-            parsed_products: List[Product] = []
-            for element in product_elements:
-                try:
-                    parsed_product = self._parse_product_data(element)
-                except MissingProductDataError:
-                    self._logger.error(
-                        "Couldn't get all required data for product. Skipping.."
-                    )
-                    continue
-                except Exception:
-                    self._logger.error(
-                        "Unexpected error when parsing data for product. Skipping.."
-                    )
-                    continue
-                else:
-                    parsed_products.append(parsed_product)
+            parsed_products = self._scrape_products(driver, url)
 
             self._logger.info(
                 f"Successfully parsed {len(parsed_products)} products "
