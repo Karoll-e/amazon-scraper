@@ -26,6 +26,7 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 STORE_SCRAPERS = {
     "amazon": "amazon_scraper.scrapers.amazon.AmazonScraper",
     "cruz_verde": "amazon_scraper.scrapers.cruz_verde.CruzVerdeScraper",
+    "farmatodo": "amazon_scraper.scrapers.farmatodo.FarmatodoScraper",
 }
 
 
