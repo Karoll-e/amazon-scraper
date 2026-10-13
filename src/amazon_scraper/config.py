@@ -17,11 +17,14 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         "amazon": {
             "base_url": "https://www.amazon.com",
         },
-        # Future stores:
-        # "cruz_verde": {"base_url": "https://www.cruzverde.com.co"},
-        # "farmatodo": {"base_url": "https://www.farmatodo.com"},
-        # "locatel": {"base_url": "https://www.locatel.com.co"},
-        # "colsubsidio": {"base_url": "https://www.colsubsidio.com"},
+        "cruz_verde": {
+            "base_url": "https://www.cruzverde.com.co",
+            "default_url": "https://www.cruzverde.com.co/bebe-y-maternidad/",
+        },
+        "farmatodo": {
+            "base_url": "https://www.farmatodo.com.co",
+            "default_url": "https://www.farmatodo.com.co/categorias/cuidado-del-bebe",
+        },
     },
     "categories": {
         "baby": {

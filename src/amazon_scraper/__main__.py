@@ -54,12 +54,15 @@ def cli() -> None:
 @click.option(
     "--store",
     default="amazon",
-    help="Store to scrape (e.g. amazon, cruz_verde). Default: amazon.",
+    help="Store to scrape (e.g. amazon, cruz_verde, farmatodo). Default: amazon.",
 )
 @click.option(
     "--url",
-    required=True,
-    help="The URL of the page to scrape.",
+    default=None,
+    help=(
+        "The URL of the page to scrape. If omitted, uses the store's "
+        "default_url from config.yaml."
+    ),
 )
 @click.option(
     "--output",
@@ -71,13 +74,27 @@ def cli() -> None:
     default=None,
     help="Directory for output files. Default: 'output'.",
 )
-def scrape(store: str, url: str, output: str | None, output_dir: str | None) -> None:
+def scrape(store: str, url: str | None, output: str | None, output_dir: str | None) -> None:
     """Scrape products from a store URL and save to CSV + JSON."""
     logger = logging.getLogger("amazon_scraper")
     config = load_config()
 
     if output_dir is None:
         output_dir = config.get("output_dir", "output")
+
+    # Fall back to the store's default_url from config when --url is omitted
+    if url is None:
+        url = (
+            config.get("stores", {})
+            .get(store, {})
+            .get("default_url")
+        )
+    if url is None:
+        store_cfg = config.get("stores", {}).get(store, {})
+        raise click.ClickException(
+            f"No --url given and no default_url configured for store '{store}' "
+            f"in config.yaml."
+        )
 
     scraper = _get_scraper(store, logger)
     collector = DataCollector(scraper=scraper, output_dir=output_dir, logger=logger)
