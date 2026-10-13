@@ -176,6 +176,7 @@ def images(
     from amazon_scraper.imagegen import (
         DEFAULT_OUTPUT_DIR,
         generate_images,
+        generate_messages,
         make_driver,
     )
     from amazon_scraper.models import Product
@@ -215,15 +216,21 @@ def images(
             continue
 
     logger.info(f"Generating {len(products)} images..")
+    out_dir = output_dir or DEFAULT_OUTPUT_DIR
     paths = generate_images(
         products,
         driver_factory=make_driver,
-        output_dir=output_dir or DEFAULT_OUTPUT_DIR,
+        output_dir=out_dir,
         logger_obj=logger,
     )
-    click.echo(f"\nGenerated {len(paths)} images:")
+
+    # WhatsApp messages: one .txt per image + consolidated file
+    msg_paths = generate_messages(products, output_dir=out_dir, logger_obj=logger)
+
+    click.echo(f"\nGenerated {len(paths)} images + {len(msg_paths)} messages:")
     for p in paths:
-        click.echo(f"  {p}")
+        click.echo(f"  📷 {p}")
+        click.echo(f"  💬 {p.with_suffix('.txt')}")
 
 
 if __name__ == "__main__":

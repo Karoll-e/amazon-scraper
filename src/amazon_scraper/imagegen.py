@@ -309,6 +309,124 @@ def generate_images(
     return generated
 
 
+# ---------------------------------------------------------------------------
+#  WhatsApp message generation (same style as the channel's posts)
+# ---------------------------------------------------------------------------
+
+# Words that are not brands when scanning a title for the brand tag.
+_NOT_BRANDS = {
+    "pañales", "pañal", "panales", "panal", "toallitas", "toallitas",
+    "humedas", "húmedas", "pack", "paquete", "caja", "bolsas", "frasco",
+    "bebe", "bebé", "baby", "crema", "jabon", "jabón", "shampoo", "x",
+    "und", "unidades", "etapa", "talla", "maxi", "premium",
+}
+
+# Category keywords -> hashtag
+_CATEGORY_TAGS = [
+    (("pañal", "panal", "toallita"), "#PañalesBebé"),
+    (("formula", "fórmula", "nan", "klim", "promod", "enfagrow"), "#FórmulaInfantil"),
+    (("compota", "cereal", "papilla", "gerber", "alimento"), "#AlimentaciónBebé"),
+    (("jabon", "jabón", "shampoo", "higiene", "crema", "locion", "loción", "aceite"), "#HigieneBebé"),
+    (("tetero", "biberon", "biberón", "chupo", "chupon"), "#AlimentaciónBebé"),
+]
+
+MESSAGE_SEPARATOR = "─" * 32
+
+
+def _brand_tag(title: str) -> str | None:
+    """Extracts a plausible brand word from the product title for a hashtag."""
+    import re as _re
+
+    for raw in title.split():
+        word = raw.strip("(),;:.").lower()
+        if word in _NOT_BRANDS or not word.isalpha() or len(word) < 3:
+            continue
+        return raw.strip("(),;:.")
+    return None
+
+
+def _category_tags(title: str, category: str | None) -> List[str]:
+    """Builds category hashtags from the title and category text."""
+    text = f"{category or ''} {title}".lower()
+    tags: List[str] = []
+    for keywords, tag in _CATEGORY_TAGS:
+        if any(k in text for k in keywords) and tag not in tags:
+            tags.append(tag)
+    if not tags:
+        tags.append("#CuidadoDelBebé")
+    return tags
+
+
+def format_message(product: Product) -> str:
+    """Formats one product as a WhatsApp post, channel style."""
+    lines: List[str] = []
+
+    try:
+        discount = int(float(product.discount_percentage))
+    except (TypeError, ValueError):
+        discount = 0
+    if discount > 0:
+        lines.append(f"🔥 {discount}% DE DESCUENTO")
+        lines.append("")
+
+    lines.append(f"➡️ {format_cop(product.price)}")
+    lines.append("")
+    lines.append(product.title)
+    lines.append("")
+
+    tags = _category_tags(product.title, product.category)
+    brand = _brand_tag(product.title)
+    if brand:
+        brand_clean = "".join(c for c in brand if c.isalnum())
+        tag_line = f"#{brand_clean} " + " ".join(tags) + " #OfertasBebé"
+    else:
+        tag_line = " ".join(tags) + " #OfertasBebé"
+    lines.append(tag_line)
+    lines.append("")
+    lines.append("🛒 ¡CÓMPRALO AQUÍ! 👇")
+    lines.append(product.url)
+
+    return "\n".join(lines)
+
+
+def generate_messages(
+    products: List[Product],
+    output_dir: str,
+    logger_obj: logging.Logger | None = None,
+) -> List[Path]:
+    """
+    Writes one .txt per product (same base name as its PNG) plus a
+    consolidated all_messages.txt for easy copy-paste.
+    """
+    log = logger_obj or logger
+    out = Path(output_dir)
+    out.mkdir(parents=True, exist_ok=True)
+
+    if not products:
+        log.info("No messages to write.")
+        return []
+
+    generated: List[Path] = []
+    all_blocks: List[str] = []
+    for product in products:
+        message = format_message(product)
+        txt_path = out / f"{product.store}_{product.product_id}.txt"
+        txt_path.write_text(message, encoding="utf-8")
+        generated.append(txt_path)
+        img_name = f"{product.store}_{product.product_id}.png"
+        all_blocks.append(
+            f"📷 {img_name}\n{MESSAGE_SEPARATOR}\n{message}"
+        )
+
+    consolidated = out / "all_messages.txt"
+    consolidated.write_text(
+        f"\n\n{MESSAGE_SEPARATOR}\n\n".join(all_blocks) + "\n",
+        encoding="utf-8",
+    )
+    log.info(f"Messages written to {consolidated}")
+    return generated
+
+
 def load_products_from_csv(csv_path: str) -> List[Product]:
     """Loads Product models from a scraper output CSV."""
     df = pd.read_csv(csv_path, dtype=str)
