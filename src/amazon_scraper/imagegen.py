@@ -22,6 +22,7 @@
 
 import logging
 import time
+from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
 from typing import Dict, List
 
@@ -72,16 +73,26 @@ def make_driver():
 
 
 def format_cop(value: str | float | None) -> str:
-    """Formats a COP price as $12.345 (dots as thousands separator)."""
+    """
+    Formats a COP price as $12.345 (dots as thousands separator).
+
+    Handles the three shapes prices come in:
+      - numbers / numeric strings: 34552.5 (Farmatodo floats) -> $34.553
+      - "34552.500"-style thousand separators -> $34.552.500
+      - "$34.552" already-formatted strings -> $34.552
+    A single dot followed by <= 2 digits is a DECIMAL separator (removed by
+    rounding); anything else is a thousands separator.
+    """
     if value is None or value == "":
         return ""
-    try:
-        num = float(str(value).replace(".", "").replace(",", "."))
-    except ValueError:
-        try:
-            num = float(value)
-        except (TypeError, ValueError):
-            return str(value)
+    s = str(value).strip().replace("$", "").replace(" ", "")
+    s = s.replace(",", ".")  # normalize commas to dots
+    parts = s.split(".")
+    if len(parts) == 2 and len(parts[1]) <= 2:
+        # single dot with 1-2 decimals -> decimal separator, round half-up
+        num = Decimal(s).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+    else:
+        num = Decimal(s.replace(".", ""))
     return f"${num:,.0f}".replace(",", ".")
 
 
